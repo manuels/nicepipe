@@ -1,0 +1,31 @@
+#!/bin/sh
+
+ISCALLER=$1
+shift
+
+MODE=$1
+shift
+
+FILENAME="$ISCALLER.cre"
+
+if [ "$MODE" = "publish" ]; then
+  cat > $FILENAME
+fi
+
+if [ "$MODE" = "lookup" ]; then
+  if [ $ISCALLER = "1" ]; then 
+    FILENAME="0.cre"
+  else
+    FILENAME="1.cre"
+  fi
+
+  while [ ! -f "$FILENAME" ]; do
+    #inotifywait -q -t 100 -e create . > /dev/null
+    sleep 1
+  done
+  cat $FILENAME
+fi
+
+if [ "$MODE" = "unpublish" ]; then
+  rm $FILENAME
+fi
