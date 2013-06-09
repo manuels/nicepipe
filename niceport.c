@@ -45,6 +45,7 @@ void parse_argv(int argc, char *argv[]);
 void setup_glib();
 NiceAgent* setup_libnice();
 GSocketService* setup_server(NiceAgent* agent);
+GSocketClient* setup_client(NiceAgent* agent);
 gboolean handle_incoming_connection(GSocketService *service, GSocketConnection *conn, GObject *source_object, gpointer user_data);
 
 int
@@ -57,16 +58,28 @@ main(int argc, char *argv[]) {
   NiceAgent *agent;
   agent = setup_libnice();
 
-  GSocketService* server;
-  server = setup_server(agent);
-
   // Connect to signals
   g_signal_connect(G_OBJECT(agent), "candidate-gathering-done", G_CALLBACK(exchange_credentials), NULL);
 
-  if(not_reliable)
-    g_signal_connect(G_OBJECT(agent), "component-state-changed",  G_CALLBACK(start_server), server);
-  else
-    g_signal_connect(G_OBJECT(agent), "reliable-transport-writable",  G_CALLBACK(start_server_reliable), server);
+  if(is_caller) {
+    GSocketService* server;
+    server = setup_server(agent);
+
+    if(not_reliable)
+      g_signal_connect(G_OBJECT(agent), "component-state-changed",  G_CALLBACK(start_server), server);
+    else
+      g_signal_connect(G_OBJECT(agent), "reliable-transport-writable",  G_CALLBACK(start_server_reliable), server);
+  }
+  else {
+    GSocketClient* client;
+    client = setup_client(agent);
+
+    /*if(not_reliable)
+      g_signal_connect(G_OBJECT(agent), "component-state-changed",  G_CALLBACK(connect_client), client);
+    else
+      g_signal_connect(G_OBJECT(agent), "reliable-transport-writable",  G_CALLBACK(connect_client_reliable), client);
+      */
+  }
 
   nice_agent_attach_recv(agent, nice_stream_id, 1, g_main_loop_get_context(gloop), recv_data2fd, NULL);
 
@@ -84,7 +97,6 @@ main(int argc, char *argv[]) {
   g_main_loop_run(gloop);
 
   g_object_unref(agent);
-  g_object_unref(server);
   g_main_loop_unref(gloop);
 
   return EXIT_SUCCESS;
@@ -117,17 +129,15 @@ GSocketService*
 setup_server(NiceAgent* agent) {
   GError* error = NULL;
   GSocketService* server = g_socket_service_new();
-  guint server_port = 1500;
-  if(!is_caller)
-    server_port++;
+  guint port = 1500;
 
   g_socket_listener_add_inet_port((GSocketListener*)server,
-                                  server_port,
+                                  port,
                                   NULL,
                                   &error);
   if(error != NULL) {
     g_critical("Error starting to listen on port %i! (%s)",
-                server_port, error->message);
+                port, error->message);
     g_error_free(error);
     g_object_unref(agent);
     g_object_unref(server);
@@ -139,6 +149,7 @@ setup_server(NiceAgent* agent) {
   g_signal_connect(server, "incoming", G_CALLBACK(handle_incoming_connection), agent);
   return server;
 }
+
 
 gboolean
 handle_incoming_connection(GSocketService *service, GSocketConnection *conn,
@@ -155,3 +166,34 @@ handle_incoming_connection(GSocketService *service, GSocketConnection *conn,
 
   return FALSE; // only allow one connection
 }
+
+
+GSocketClient*
+setup_client(NiceAgent* agent) {
+  GError* error = NULL;
+  GSocketClient* client = g_socket_client_new();
+  guint port = 1501;
+
+  GSocketConnection *conn;
+  conn = g_socket_client_connect_to_host(client,
+    "localhost", port, NULL, &error);
+
+  if(error != NULL) {
+    g_critical("Error starting to connecting on service localhost:%i! (%s)",
+                port, error->message);
+    g_error_free(error);
+    g_object_unref(agent);
+    g_object_unref(client);
+    g_main_loop_unref(gloop);
+   
+   exit(1);
+  }
+
+  GSocket *socket = g_socket_connection_get_socket(conn);
+  output_fd = g_socket_get_fd(socket);
+
+  GIOChannel* channel = g_io_channel_unix_new(output_fd);
+  g_io_add_watch(channel, G_IO_IN, send_data, agent);
+  return client;
+}
+
