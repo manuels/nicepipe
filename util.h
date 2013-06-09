@@ -10,4 +10,8 @@ void local_credentials_to_string(NiceAgent *agent, guint stream_id, guint compon
 void parse_remote_data(NiceAgent *agent, guint stream_id, guint component_id, char *line, gsize len);
 NiceCandidate* parse_candidate(char *scand, guint stream_id);
 
+void publish_local_credentials(NiceAgent* agent, guint stream_id);
+void unpublish_local_credentials(NiceAgent* agent, guint stream_id);
+void lookup_remote_credentials(NiceAgent* agent, guint stream_id);
+
 #endif

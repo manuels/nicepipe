@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "util.h"
+#include "global.h"
 
 static const gchar *candidate_type_name[] = {"host", "srflx", "prflx", "relay"};
 
@@ -261,4 +262,72 @@ parse_candidate(char *scand, guint stream_id) {
   g_strfreev(tokens);
 
   return cand;
+}
+
+void
+publish_local_credentials(NiceAgent* agent, guint stream_id) {
+  gint retval;
+
+  // publish local credentials
+  gchar publish_cmd[] = "./niceexchange.sh 0 publish dummy";
+  if(is_caller)
+    publish_cmd[18] = '1';
+
+  gchar *stdin;
+  local_credentials_to_string(agent, stream_id, 1, &stdin);
+
+  retval = execute_sync(publish_cmd, stdin, NULL, NULL);
+  if(retval != 0) {
+    g_critical("niceexchange publish returned a non-zero return value (%i)!", retval);
+ 
+    g_main_loop_unref(gloop);
+    g_object_unref(agent);
+
+    exit(1);
+  }
+  g_free(stdin);
+  g_debug("published local credentials\n");
+}
+
+void
+unpublish_local_credentials(NiceAgent* agent, guint stream_id) {
+  guint retval;
+
+  g_debug("lookup remote credentials done\n");
+  gchar unpublish_cmd[] = "./niceexchange.sh 0 unpublish dummy";
+  if(is_caller)
+    unpublish_cmd[18] = '1';
+
+  retval = execute_sync(unpublish_cmd, NULL, NULL, NULL);
+  if(retval != 0) {
+    g_critical("niceexchange unpublish returned a non-zero return value (%i)!", retval);
+ 
+    g_main_loop_unref(gloop);
+    g_object_unref(agent);
+
+    exit(1);
+  }
+  g_debug("unpublish local credentials done\n");
+}
+
+void
+lookup_remote_credentials(NiceAgent* agent, guint stream_id) {
+  guint retval;
+
+  gchar lookup_cmd[] = "./niceexchange.sh 0 lookup dummy";
+  if(is_caller)
+    lookup_cmd[18] = '1';
+
+  gchar *stdout;
+  retval = execute_sync(lookup_cmd, NULL, &stdout, NULL);
+  if(retval != 0) {
+    g_critical("niceexchange lookup returned a non-zero return value (%i)!", retval);
+ 
+    g_main_loop_unref(gloop);
+    g_object_unref(agent);
+
+    exit(1);
+  }
+  parse_remote_data(agent, stream_id, 1, stdout, strlen(stdout));
+  g_free(stdout);
 }
