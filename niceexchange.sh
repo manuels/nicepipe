@@ -42,11 +42,12 @@ while [ $# != 0 ]; do
 		head -n 1 $TMP_CREDENTIALS_FILE
 		tail -n+2 $TMP_CREDENTIALS_FILE > $TMP_NEW_REMOTE_PUBLIC_KEY_FILE
 
+		# calculate fingerprints
 		NEW_FINGERPRINT=`ssh-keygen -f $TMP_NEW_REMOTE_PUBLIC_KEY_FILE -l | cut -d' ' -f2`
 		OLD_FINGERPRINT=`ssh-keygen -F $HOSTNAME  -l | grep -v '#' | grep -i rsa | head -n 1 | cut -d' ' -f2`
 
 		ok=yes
-
+		# compare finger prints
 		if [ "$OLD_FINGERPRINT" = '' ]; then
 			echo "This seems to be a new public key! (fingerprint: '$NEW_FINGERPRINT')!" 1>&2
 			echo "Maybe you want to add it to your ~/.ssh/known_hosts?" 1>&2
