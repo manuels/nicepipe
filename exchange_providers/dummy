@@ -12,6 +12,10 @@ if [ "$MODE" = "publish" ]; then
   cat > $FILENAME
 fi
 
+if [ "$MODE" = "unpublish" ]; then
+  rm -f $FILENAME
+fi
+
 if [ "$MODE" = "lookup" ]; then
   if [ $ISCALLER = "1" ]; then 
     FILENAME="0.cre"
@@ -26,6 +30,3 @@ if [ "$MODE" = "lookup" ]; then
   cat $FILENAME
 fi
 
-if [ "$MODE" = "unpublish" ]; then
-  rm $FILENAME
-fi
