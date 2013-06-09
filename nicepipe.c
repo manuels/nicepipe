@@ -10,6 +10,7 @@
 
 #include "global.h"
 #include "callbacks.h"
+#include "util.h"
 
 guint stun_port = 3478;
 gchar* stun_host = NULL;
@@ -32,6 +33,8 @@ GOptionEntry all_options[] =
   { NULL }
 };
 
+#define G_LOG_DOMAIN    ((gchar*) 0)
+
 GMainLoop *gloop;
 
 guint nice_stream_id;
@@ -43,6 +46,7 @@ NiceAgent* setup_libnice();
 int
 main(int argc, char *argv[]) {
   parse_argv(argc, argv);
+  g_log_set_handler(G_LOG_DOMAIN, G_LOG_LEVEL_DEBUG, log_stderr, NULL);
 
   setup_glib();
   
@@ -59,7 +63,7 @@ main(int argc, char *argv[]) {
 
   nice_agent_attach_recv(agent, nice_stream_id, 1, g_main_loop_get_context(gloop), recv_data, NULL);
 
-  g_debug("Starting to gather candidates...");
+  g_debug("Starting to gather candidates...\n");
   if (!nice_agent_gather_candidates(agent, nice_stream_id)) {
     g_critical("Failed to start candidate gathering\n");
     

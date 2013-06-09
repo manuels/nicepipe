@@ -8,6 +8,14 @@
 
 static const gchar *candidate_type_name[] = {"host", "srflx", "prflx", "relay"};
 
+void
+log_stderr(const gchar *log_domain,
+            GLogLevelFlags log_level,
+            const gchar *message,
+            gpointer user_data) {
+  fprintf(stderr, "%s", message);
+}
+
 gboolean
 resolve_hostname(gchar* hostname, gchar** out_addr) {
   GList* resolved_addresses;
@@ -269,7 +277,7 @@ publish_local_credentials(NiceAgent* agent, guint stream_id) {
   gint retval;
 
   // publish local credentials
-  gchar publish_cmd[] = "./niceexchange.sh 0 publish dummy";
+  gchar publish_cmd[] = "./niceexchange.sh 0 localhost publish dummy";
   if(is_caller)
     publish_cmd[18] = '1';
 
@@ -294,7 +302,7 @@ unpublish_local_credentials(NiceAgent* agent, guint stream_id) {
   guint retval;
 
   g_debug("lookup remote credentials done\n");
-  gchar unpublish_cmd[] = "./niceexchange.sh 0 unpublish dummy";
+  gchar unpublish_cmd[] = "./niceexchange.sh 0 localhost unpublish dummy";
   if(is_caller)
     unpublish_cmd[18] = '1';
 
@@ -314,14 +322,19 @@ void
 lookup_remote_credentials(NiceAgent* agent, guint stream_id) {
   guint retval;
 
-  gchar lookup_cmd[] = "./niceexchange.sh 0 lookup dummy";
+  gchar lookup_cmd[] = "./niceexchange.sh 0 localhost lookup dummy";
   if(is_caller)
     lookup_cmd[18] = '1';
 
   gchar *stdout;
-  retval = execute_sync(lookup_cmd, NULL, &stdout, NULL);
+  gchar *stderr;
+  retval = execute_sync(lookup_cmd, NULL, &stdout, &stderr);
   if(retval != 0) {
     g_critical("niceexchange lookup returned a non-zero return value (%i)!", retval);
+    if(stderr != NULL)
+      g_critical("This was written to stderr:\n%s", stderr);
+    g_free(stdout);
+    g_free(stderr);
  
     g_main_loop_unref(gloop);
     g_object_unref(agent);
@@ -330,4 +343,5 @@ lookup_remote_credentials(NiceAgent* agent, guint stream_id) {
   }
   parse_remote_data(agent, stream_id, 1, stdout, strlen(stdout));
   g_free(stdout);
+  g_free(stderr);
 }
