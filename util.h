@@ -19,4 +19,7 @@ void log_stderr(const gchar *log_domain,
                       const gchar *message,
                       gpointer user_data);
 
+gboolean
+parse_packet(gchar* buffer, gsize *buf_len, gchar* packet, gsize* packet_len);
+
 #endif

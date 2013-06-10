@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "util.h"
 #include "callbacks.h"
@@ -17,6 +18,8 @@ exchange_credentials(NiceAgent *agent, guint stream_id, gpointer data) {
   publish_local_credentials(agent, stream_id);
   lookup_remote_credentials(agent, stream_id);
 
+  pipe_stdio_to_hook("NICE_PIPE_BEFORE");
+
   g_debug("candidate gathering done\n");
 }
 
@@ -24,14 +27,26 @@ void
 start_server(NiceAgent *agent, guint stream_id, guint component_id, guint state, gpointer server_ptr) {
   GSocketService* server = (GSocketService*) server_ptr;
   g_debug("Server starts listening.\n");
-  g_socket_service_start(server);
+
+  if(is_caller)
+    g_socket_service_start(server);
+  else
+    setup_client(agent);
+
+  pipe_stdio_to_hook("NICE_PIPE_AFTER");
 }
 
 void
 start_server_reliable(NiceAgent *agent, guint stream_id, guint component_id, gpointer server_ptr) {
   GSocketService* server = (GSocketService*) server_ptr;
   g_debug("Server starts listening.\n");
-  g_socket_service_start(server);
+
+  if(is_caller)
+    g_socket_service_start(server);
+  else
+    setup_client(agent);
+
+  pipe_stdio_to_hook("NICE_PIPE_AFTER");
 }
 
 void
@@ -61,7 +76,6 @@ attach_stdin2send_callback_reliable(NiceAgent *agent, guint stream_id, guint com
 
 gboolean
 send_data(GIOChannel *source, GIOCondition cond, gpointer agent_ptr) {
-  g_debug("send_data()\n");
 
   NiceAgent *agent = agent_ptr;
   gsize max_len = 10240;
@@ -69,11 +83,33 @@ send_data(GIOChannel *source, GIOCondition cond, gpointer agent_ptr) {
   gsize len;
 
   gint total = 0;
+  gint i = 0;
+  gint res;
   do {
-    if(g_io_channel_read_chars(source, data, max_len, &len, NULL) == G_IO_STATUS_NORMAL)
+    i++;
+    res = g_io_channel_read_chars(source, data, max_len, &len, NULL);
+    g_debug("send_data(%u): %s %u\n", len, data, i);
+    if(res == G_IO_STATUS_NORMAL)
       total += nice_agent_send(agent, nice_stream_id, 1, len, data);
-    else
-      break;
+    else {
+      switch(res) {
+        case G_IO_STATUS_ERROR:
+          g_debug("G_IO_STATUS_ERROR\n");
+          break;
+        case G_IO_STATUS_EOF:
+          g_debug("G_IO_STATUS_EOF\n");
+          break;
+        case G_IO_STATUS_AGAIN:
+          g_debug("G_IO_STATUS_AGAIN\n");
+          break;
+      }
+      if(res != G_IO_STATUS_AGAIN) {
+        g_main_loop_quit (gloop);
+        break;
+      }
+      if(res == G_IO_STATUS_AGAIN && len == 0)
+        break;
+    }
   }
   while(len < max_len);
 
@@ -87,5 +123,5 @@ recv_data2fd(NiceAgent *agent, guint stream_id, guint component_id, guint len,
     gchar *buf, gpointer data) {
   g_debug("recv_data2fd(fd=%u, len=%u)\n", output_fd, len);
   write(output_fd, buf, len);
-  syncfs(output_fd);
+//  syncfs(output_fd);
 }

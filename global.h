@@ -9,4 +9,5 @@ extern guint stun_port;
 extern gchar* stun_host;
 extern gint* is_caller;
 extern guint output_fd;
+extern gboolean verbose;
 #endif

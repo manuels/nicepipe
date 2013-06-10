@@ -27,7 +27,7 @@ while [ $# != 0 ]; do
 	fi
 
 	if [ "$MODE" = 'publish' ]; then
-		cat - $PUBLIC_KEY_FILE | ./exchange_providers/${PROVIDER} ${ISCALLER} ${MODE} ${OPTIONS}
+		cat - $PUBLIC_KEY_FILE $NICE_LOCAL_CRT | ./exchange_providers/${PROVIDER} ${ISCALLER} ${MODE} ${OPTIONS}
 	fi
 
 	if [ "$MODE" = 'unpublish' ]; then
@@ -35,13 +35,18 @@ while [ $# != 0 ]; do
 	fi
 
 	if [ "$MODE" = 'lookup' ]; then
-		TMP_CREDENTIALS_FILE=$(tempfile -s.cre -p.nice)
-		TMP_NEW_REMOTE_PUBLIC_KEY_FILE=`tempfile -s.pub -p.nice`
-
-		./exchange_providers/${PROVIDER} ${ISCALLER} ${MODE} ${OPTIONS} > $TMP_CREDENTIALS_FILE
-		head -n 1 $TMP_CREDENTIALS_FILE
-		tail -n+2 $TMP_CREDENTIALS_FILE > $TMP_NEW_REMOTE_PUBLIC_KEY_FILE
-
+		TMP_CREDENTIALS_FILE=$(tempfile -s.cre -p.n)
+		TMP_REST=$(tempfile -s.r -p.n)
+		TMP_NEW_REMOTE_PUBLIC_KEY_FILE=$(tempfile -s.pub -p.n)
+		if [ -z "$NICE_REMOTE_CRT" ]; then
+			NICE_REMOTE_CRT=`tempfile -s.pub -p.nice`
+		fi
+		
+		./exchange_providers/${PROVIDER} ${ISCALLER} ${MODE} ${OPTIONS} > $TMP_REST
+		head -n 1 $TMP_REST
+		tail -n+2 $TMP_REST | head -n 1 > $TMP_NEW_REMOTE_PUBLIC_KEY_FILE
+		tail -n+3 $TMP_REST > $NICE_REMOTE_CRT
+	
 		# calculate fingerprints
 		NEW_FINGERPRINT=`ssh-keygen -f $TMP_NEW_REMOTE_PUBLIC_KEY_FILE -l | cut -d' ' -f2`
 		OLD_FINGERPRINT=`ssh-keygen -F $HOSTNAME  -l | grep -v '#' | grep -i rsa | head -n 1 | cut -d' ' -f2`

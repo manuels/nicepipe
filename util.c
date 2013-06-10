@@ -13,7 +13,8 @@ log_stderr(const gchar *log_domain,
             GLogLevelFlags log_level,
             const gchar *message,
             gpointer user_data) {
-  fprintf(stderr, "%s", message);
+  //if(verbose == TRUE)
+    fprintf(stderr, "%i: %s", is_caller, message);
 }
 
 gboolean
@@ -344,4 +345,58 @@ lookup_remote_credentials(NiceAgent* agent, guint stream_id) {
   parse_remote_data(agent, stream_id, 1, stdout, strlen(stdout));
   g_free(stdout);
   g_free(stderr);
+}
+
+void
+pipe_stdio_to_hook(const gchar* envvar_name) {
+  gchar** argv;
+  gint argc;
+  gint i;
+
+  gchar* cmd = g_getenv(envvar_name);
+  g_debug("pipe_stdio_to_hook('%s')=%s\n", envvar_name, cmd);
+  if(cmd == NULL || strlen(cmd) == 0)
+    return;
+
+  // parse command line to argv array
+  if(!g_shell_parse_argv(cmd, &argc, &argv, NULL)) {
+    g_critical("Error parsing command line '%s'", cmd);
+
+    exit(1);
+  }
+
+  gboolean spawned;
+  GPid pid;
+  gint stdio[2];
+  GError* error = NULL;
+
+  g_debug("Executing '%s'\n", cmd);
+  spawned = g_spawn_async_with_pipes(".", argv, NULL, G_SPAWN_CHILD_INHERITS_STDIN, NULL, NULL,
+    &pid, NULL, NULL, NULL, &error);
+
+  if(error != NULL) {
+    g_critical("Error executing '%s': %s", cmd, error->message);
+  }
+  g_assert(spawned);
+}
+
+gboolean
+parse_packet(gchar* buffer, gsize *buf_len, gchar* packet, gsize* packet_len) {
+  gchar ip_ver = buffer[0] & 0xf0;
+  switch(ip_ver) {
+    case 0x40:
+      *packet_len = buffer[2] < 8 | buffer[3];
+    break;
+    case 0x60:
+    //break;
+    default:
+      g_critical("Unknown packet type (%x)!", ip_ver);
+      exit(1);
+  }
+  if(*buf_len >= *packet_len) {
+    memcpy(packet, buffer, *packet_len);
+    *buf_len -= *packet_len;
+    return TRUE;
+  }
+  return FALSE;
 }
