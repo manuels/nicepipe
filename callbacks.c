@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #include "util.h"
 #include "callbacks.h"
@@ -76,45 +79,46 @@ attach_stdin2send_callback_reliable(NiceAgent *agent, guint stream_id, guint com
 
 gboolean
 send_data(GIOChannel *source, GIOCondition cond, gpointer agent_ptr) {
-
-  NiceAgent *agent = agent_ptr;
-  gsize max_len = 10240;
-  gchar *data = g_malloc(max_len);
+  static char buffer[10240];
+  struct iovec io;
+  char crap[10240];
+  const gsize max_size = 10240;
   gsize len;
 
-  gint total = 0;
-  gint i = 0;
+  NiceAgent *agent = agent_ptr;
+  struct msghdr msgh;
+  struct cmsghdr *cmsg;
+
   gint res;
   do {
-    i++;
-    res = g_io_channel_read_chars(source, data, max_len, &len, NULL);
-    g_debug("send_data(%u): %s %u\n", len, data, i);
-    if(res == G_IO_STATUS_NORMAL)
-      total += nice_agent_send(agent, nice_stream_id, 1, len, data);
+    io.iov_base = buffer;
+    io.iov_len = max_size;
+    memset(&msgh, 0, sizeof(msgh));
+    msgh.msg_iov = &io;
+    msgh.msg_iovlen = 5;
+    msgh.msg_control = &crap;
+    msgh.msg_controllen = sizeof(crap);
+
+    int sock = g_io_channel_unix_get_fd(source);
+    
+    res = recvmsg(sock, &msgh, MSG_DONTWAIT);
+    if(res > -1) {
+      g_debug("recvmsg: %i\n", res);
+      res = nice_agent_send(agent, nice_stream_id, 1, res, buffer);
+      g_debug("nice_agent_send: %i\n", res);
+    }
     else {
-      switch(res) {
-        case G_IO_STATUS_ERROR:
-          g_debug("G_IO_STATUS_ERROR\n");
-          break;
-        case G_IO_STATUS_EOF:
-          g_debug("G_IO_STATUS_EOF\n");
-          break;
-        case G_IO_STATUS_AGAIN:
-          g_debug("G_IO_STATUS_AGAIN\n");
-          break;
-      }
-      if(res != G_IO_STATUS_AGAIN) {
-        g_main_loop_quit (gloop);
+      if(errno != EAGAIN && errno != EWOULDBLOCK) {
+        g_critical("Error sending: recvmsg() = %i, errno=%i\n", res, errno);
+        g_main_loop_quit(gloop);
         break;
       }
-      if(res == G_IO_STATUS_AGAIN && len == 0)
+      if(errno != EAGAIN && errno != EWOULDBLOCK)
         break;
     }
   }
-  while(len < max_len);
+  while(len < max_size);
 
-  g_debug("send_data(): sent %u bytes\n", total);
-  g_free(data);
   return TRUE;
 }
 
