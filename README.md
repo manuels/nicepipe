@@ -92,9 +92,7 @@ Just implement another exchange provider. They take two arguments:
 
 ### Second Argument
 If the second argument is `publish` then the `stdin` MUST be written where the other peer finds it.
-
 If the second argument is `lookup` then the data published by the other peer MUST be written to `stdout`.
-
 If the second argument is `unpublish` then the data previously published SHOULD be unpublished (optional).
 
 e.g.
