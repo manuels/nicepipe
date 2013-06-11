@@ -125,6 +125,7 @@ send_data(GIOChannel *source, GIOCondition cond, gpointer agent_ptr) {
 void
 recv_data2fd(NiceAgent *agent, guint stream_id, guint component_id, guint len,
     gchar *buf, gpointer data) {
+  unpublish_local_credentials(agent, stream_id);
   g_debug("recv_data2fd(fd=%u, len=%u)\n", output_fd, len);
   write(output_fd, buf, len);
 //  syncfs(output_fd);

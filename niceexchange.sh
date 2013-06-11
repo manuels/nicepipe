@@ -12,7 +12,6 @@ shift
 MODE=$1
 shift
 
-set -x
 
 while [ $# != 0 ]; do
 	ARG=$1
