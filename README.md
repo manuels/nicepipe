@@ -21,7 +21,7 @@ It allows you to setup a network connection between two peers even if they are b
 Installation
 ------------
 
-`nicepipe` requires `glib`, `libnice`, `socat` and your SSH key pair (`$HOME/.ssh/id_rsa`).
+`nicepipe` requires `glib`, `libnice`, `socat` and your SSH RSA key pair (`$HOME/.ssh/id_rsa`).
 To compile just run `make`.
 
 
@@ -29,7 +29,7 @@ Usage
 -----
 
 `nicepipe` uses your SSH key pair (`$HOME/.ssh/id_rsa`) to setup a secure connection between the two peers.
-Currently a file hosting service like Dropbox or Ubuntu One setup (*the same account*) on each peers.
+Currently a file hosting service like Dropbox or Ubuntu One setup (*MUST be the same account*) on each peers.
 
 1) Make sure you have generated an SSH key pair (otherwise use `ssh-keygen`).
 
@@ -43,14 +43,14 @@ Currently a file hosting service like Dropbox or Ubuntu One setup (*the same acc
 
 3a) Run nicepipe in pipe-mode on both machines:
 
-    alice ~/Dropbox$ echo Hello Bob! | ./nicepipe stdio -c 1 -H <HOSTNAME>
+    alice ~/Dropbox$ echo Hello Bob! | ./nicepipe stdio -c 1 -H <PEERNAME>
     Hello Alice!`
  
 
-    bob ~/Dropbox$ echo Hello Alice! |  ./nicepipe stdio -c 0 -H <HOSTNAME>
+    bob ~/Dropbox$ echo Hello Alice! |  ./nicepipe stdio -c 0 -H <PEERNAME>
     Hello Bob!
 
-where `<HOSTNAME>` corresponds to the hostname of bob's (alice's) public key on alice's (bob's) machine in `$HOME/.ssh/known_hosts`.
+where `<PEERNAME>` corresponds to the hostname of bob's (alice's) public key on alice's (bob's) machine in `$HOME/.ssh/known_hosts` (`<PEERNAME>` MAY not be reachable (traditionally) by the local machine).
 
 3b) Run nicepipe in vpn-mode on both machines:
     
@@ -98,3 +98,10 @@ If the second argument is `unpublish` then the data previously published SHOULD 
 e.g.
 
     alice$ ./exchange_providers/dummy 1 publish             # writes stdin to a file where bob can find it
+
+
+License
+-------
+GPL
+
+Terms MAY, MUST, SHOULD etc. according to [RFC 2119](https://www.ietf.org/rfc/rfc2119.txt).
