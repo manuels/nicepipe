@@ -113,7 +113,7 @@ send_data(GIOChannel *source, GIOCondition cond, gpointer agent_ptr) {
         g_main_loop_quit(gloop);
         break;
       }
-      if(errno != EAGAIN && errno != EWOULDBLOCK)
+      if(errno == EAGAIN || errno == EWOULDBLOCK)
         break;
     }
   }
