@@ -1,5 +1,4 @@
 #!/bin/sh
-
 # upload data to some provider where somebody else can find it ;)
 PRIVATE_KEY_FILE=~/.ssh/id_rsa
 PUBLIC_KEY_FILE=~/.ssh/id_rsa.pub
@@ -12,6 +11,8 @@ shift
 
 MODE=$1
 shift
+
+set -x
 
 while [ $# != 0 ]; do
 	ARG=$1
@@ -42,6 +43,7 @@ while [ $# != 0 ]; do
 			NICE_REMOTE_CRT=`tempfile -s.pub -p.nice`
 		fi
 		
+		# split information: (credentials, public key, certificate)
 		./exchange_providers/${PROVIDER} ${ISCALLER} ${MODE} ${OPTIONS} > $TMP_REST
 		head -n 1 $TMP_REST
 		tail -n+2 $TMP_REST | head -n 1 > $TMP_NEW_REMOTE_PUBLIC_KEY_FILE
@@ -62,6 +64,22 @@ while [ $# != 0 ]; do
 			if [ "$NEW_FINGERPRINT" != "$OLD_FINGERPRINT" ]; then
 				echo "Incorrect fingerprint (was: '$NEW_FINGERPRINT', expected '$OLD_FINGERPRINT')!" 1>&2
 				ok=no
+			else
+				# check if cert was signed with this public key
+				REMOTE_CRT_PUBKEY=$(tempfile -p.n)
+				REMOTE_PUBKEY_SSH=$(tempfile -p.n)
+				REMOTE_PUBKEY=$(tempfile -p.n)
+
+				ssh-keygen -F $HOSTNAME | tail -n 1 | sed -e 's/.*ssh-rsa/ssh-rsa/' > $REMOTE_PUBKEY_SSH
+				ssh-keygen -f $REMOTE_PUBKEY_SSH -e -m PKCS8 > $REMOTE_PUBKEY
+
+				openssl x509 -noout -pubkey -in $NICE_REMOTE_CRT > $REMOTE_CRT_PUBKEY
+
+				diff $REMOTE_CRT_PUBKEY $REMOTE_PUBKEY
+				if [ $? -ne 0 ]; then
+					echo "Received certificate was not signed by the correct public key!"
+					ok=no
+				fi
 			fi
 		fi
 		rm -f $TMP_NEW_REMOTE_PUBLIC_KEY_FILE

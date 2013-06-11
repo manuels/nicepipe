@@ -13,15 +13,11 @@ openssl req -new -key ~/.ssh/id_rsa -x509 -days 365 -out $NICE_LOCAL_CRT -subj '
 
 if [ "$IS_CALLER" = "1" ]; then
 	PORT=1500
-	NICE_PIPE_AFTER="$SOCAT -x -v stdio openssl-connect:localhost:$PORT,key=$HOME/.ssh/id_rsa,cert=$NICE_LOCAL_CRT,cafile=$NICE_REMOTE_CRT"
-	#NICE_PIPE_AFTER="$SOCAT -x -v stdio openssl-connect:localhost:$PORT,key=$HOME/.ssh/id_rsa"
-	#NICE_PIPE_AFTER="$SOCAT -x -v stdio openssl-connect:localhost:$PORT"
+	NICE_PIPE_AFTER="$SOCAT stdio openssl-connect:localhost:$PORT,key=$HOME/.ssh/id_rsa,cert=$NICE_LOCAL_CRT,cafile=$NICE_REMOTE_CRT"
 	#NICE_PIPE_AFTER="$SOCAT -x -v stdio tcp-connect:localhost:$PORT"
 else
 	PORT=1501
-	NICE_PIPE_BEFORE="$SOCAT -x -v openssl-listen:$PORT,key=$HOME/.ssh/id_rsa,cert=$NICE_LOCAL_CRT,cafile=$NICE_REMOTE_CRT stdio"
-	#NICE_PIPE_BEFORE="$SOCAT -x -v openssl-listen:$PORT,key=$HOME/.ssh/id_rsa stdio"
-	#NICE_PIPE_BEFORE="$SOCAT -x -v openssl-listen:$PORT stdio"
+	NICE_PIPE_BEFORE="$SOCAT openssl-listen:$PORT,key=$HOME/.ssh/id_rsa,cert=$NICE_LOCAL_CRT,cafile=$NICE_REMOTE_CRT stdio"
 	#NICE_PIPE_BEFORE="$SOCAT -x -v tcp-listen:$PORT stdio"
 fi
 

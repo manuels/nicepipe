@@ -13,7 +13,7 @@ log_stderr(const gchar *log_domain,
             GLogLevelFlags log_level,
             const gchar *message,
             gpointer user_data) {
-  //if(verbose == TRUE)
+  if(log_level < G_LOG_LEVEL_DEBUG)
     fprintf(stderr, "%i: %s", is_caller, message);
 }
 
