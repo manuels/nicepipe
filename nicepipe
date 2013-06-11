@@ -1,8 +1,35 @@
 #!/bin/sh
 
+MODE=$1
 shift
-IS_CALLER=$1
-shift
+
+ARGV=$@
+for i in `seq $#`; do
+	if [ "$1" = '-c' ]; then
+		shift
+		IS_CALLER=$1
+	fi
+	if [ "$#" -ne 0 ]; then
+		shift
+	fi
+done
+
+if [ "$MODE" = 'stdio' ]; then
+	MODE_ARG=stdio
+elif [ "$MODE" = 'tun' ]; then
+	if [ "$IS_CALLER" = "1" ]; then
+		IP="10.0.1.2/24"
+	else
+		IP="10.0.1.1/24"
+	fi
+	MODE_ARG=tun:$IP,iff-up
+	echo "Creating new network interface with IP# ${IP}"
+else
+	echo 'First argument must be "stdio" (for pipe) or "tun" (for vpn)!'
+	echo "E.g. $0 stdio $1"
+	exit 1
+fi
+
 
 NICE_LOCAL_CRT=`tempfile -s .lc -p.n`
 NICE_REMOTE_CRT=`tempfile -s .rc -p.n`
@@ -13,24 +40,16 @@ openssl req -new -key ~/.ssh/id_rsa -x509 -days 365 -out $NICE_LOCAL_CRT -subj '
 
 if [ "$IS_CALLER" = "1" ]; then
 	PORT=1500
-	NICE_PIPE_AFTER="$SOCAT stdio openssl-connect:localhost:$PORT,key=$HOME/.ssh/id_rsa,cert=$NICE_LOCAL_CRT,cafile=$NICE_REMOTE_CRT"
+	NICE_PIPE_AFTER="$SOCAT $MODE_ARG openssl-connect:localhost:$PORT,key=$HOME/.ssh/id_rsa,cert=$NICE_LOCAL_CRT,cafile=$NICE_REMOTE_CRT"
 	#NICE_PIPE_AFTER="$SOCAT -x -v stdio tcp-connect:localhost:$PORT"
 else
 	PORT=1501
-	NICE_PIPE_BEFORE="$SOCAT openssl-listen:$PORT,key=$HOME/.ssh/id_rsa,cert=$NICE_LOCAL_CRT,cafile=$NICE_REMOTE_CRT stdio"
+	NICE_PIPE_BEFORE="$SOCAT openssl-listen:$PORT,key=$HOME/.ssh/id_rsa,cert=$NICE_LOCAL_CRT,cafile=$NICE_REMOTE_CRT $MODE_ARG"
 	#NICE_PIPE_BEFORE="$SOCAT -x -v tcp-listen:$PORT stdio"
 fi
 
-if [ "$IS_CALLER" = "1" ]; then
-	NICE_LOCAL_CRT=$NICE_LOCAL_CRT \
-	NICE_REMOTE_CRT=$NICE_REMOTE_CRT \
-	NICE_PIPE_AFTER=$NICE_PIPE_AFTER \
-	NICE_PIPE_BEFORE=$NICE_PIPE_BEFORE \
-	./niceport_raw -c $IS_CALLER -P $PORT
-else
-	NICE_LOCAL_CRT=$NICE_LOCAL_CRT \
-	NICE_REMOTE_CRT=$NICE_REMOTE_CRT \
-	NICE_PIPE_AFTER=$NICE_PIPE_AFTER \
-	NICE_PIPE_BEFORE=$NICE_PIPE_BEFORE \
-	./niceport_raw -c $IS_CALLER -P $PORT
-fi	
+NICE_LOCAL_CRT=$NICE_LOCAL_CRT \
+NICE_REMOTE_CRT=$NICE_REMOTE_CRT \
+NICE_PIPE_AFTER=$NICE_PIPE_AFTER \
+NICE_PIPE_BEFORE=$NICE_PIPE_BEFORE \
+./niceport_raw $ARGV

@@ -51,7 +51,7 @@ while [ $# != 0 ]; do
 	
 		# calculate fingerprints
 		NEW_FINGERPRINT=`ssh-keygen -f $TMP_NEW_REMOTE_PUBLIC_KEY_FILE -l | cut -d' ' -f2`
-		OLD_FINGERPRINT=`ssh-keygen -F $HOSTNAME  -l | grep -v '#' | grep -i rsa | head -n 1 | cut -d' ' -f2`
+		OLD_FINGERPRINT=`ssh-keygen -F $NICE_REMOTE_HOSTNAME  -l | grep -v '#' | grep -i rsa | head -n 1 | cut -d' ' -f2`
 
 		ok=yes
 		# compare finger prints
@@ -70,7 +70,7 @@ while [ $# != 0 ]; do
 				REMOTE_PUBKEY_SSH=$(tempfile -p.n)
 				REMOTE_PUBKEY=$(tempfile -p.n)
 
-				ssh-keygen -F $HOSTNAME | tail -n 1 | sed -e 's/.*ssh-rsa/ssh-rsa/' > $REMOTE_PUBKEY_SSH
+				ssh-keygen -F $NICE_REMOTE_HOSTNAME | tail -n 1 | sed -e 's/.*ssh-rsa/ssh-rsa/' > $REMOTE_PUBKEY_SSH
 				ssh-keygen -f $REMOTE_PUBKEY_SSH -e -m PKCS8 > $REMOTE_PUBKEY
 
 				openssl x509 -noout -pubkey -in $NICE_REMOTE_CRT > $REMOTE_CRT_PUBKEY

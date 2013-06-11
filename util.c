@@ -49,6 +49,8 @@ execute_sync(gchar *cmd, gchar* stdin, gchar** stdout, gchar** stderr) {
   gint stdio[3];
   gint i;
 
+  gchar **env = g_get_environ();
+  env = g_environ_setenv(env, "NICE_REMOTE_HOSTNAME", remote_hostname, TRUE);
   gchar** argv;
   gint argc;
 
@@ -61,7 +63,7 @@ execute_sync(gchar *cmd, gchar* stdin, gchar** stdout, gchar** stderr) {
 
   g_debug("Executing '%s'\n", cmd);
   // spawn process
-  spawned = g_spawn_async_with_pipes(".", argv, NULL, G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL,
+  spawned = g_spawn_async_with_pipes(".", argv, env, G_SPAWN_DO_NOT_REAP_CHILD, NULL, NULL,
     &pid, &stdio[0], &stdio[1], &stdio[2], NULL);
   g_assert(spawned);
 
@@ -278,7 +280,8 @@ publish_local_credentials(NiceAgent* agent, guint stream_id) {
   gint retval;
 
   // publish local credentials
-  gchar publish_cmd[] = "./niceexchange.sh 0 localhost publish dummy";
+  gchar publish_cmd[1024];
+  g_snprintf(publish_cmd, sizeof(publish_cmd), "./niceexchange.sh 0 %s publish dummy", remote_hostname);
   if(is_caller)
     publish_cmd[18] = '1';
 
@@ -303,7 +306,8 @@ unpublish_local_credentials(NiceAgent* agent, guint stream_id) {
   guint retval;
 
   g_debug("lookup remote credentials done\n");
-  gchar unpublish_cmd[] = "./niceexchange.sh 0 localhost unpublish dummy";
+  gchar unpublish_cmd[1024];
+  g_snprintf(unpublish_cmd, sizeof(unpublish_cmd), "./niceexchange.sh 0 %s unpublish dummy", remote_hostname);
   if(is_caller)
     unpublish_cmd[18] = '1';
 
@@ -323,7 +327,8 @@ void
 lookup_remote_credentials(NiceAgent* agent, guint stream_id) {
   guint retval;
 
-  gchar lookup_cmd[] = "./niceexchange.sh 0 localhost lookup dummy";
+  gchar lookup_cmd[1024];
+  g_snprintf(lookup_cmd, sizeof(lookup_cmd), "./niceexchange.sh 0 %s lookup dummy", remote_hostname);
   if(is_caller)
     lookup_cmd[18] = '1';
 
@@ -351,7 +356,8 @@ void
 pipe_stdio_to_hook(const gchar* envvar_name) {
   gchar** argv;
   gint argc;
-  gint i;
+  gchar **env = g_get_environ();
+  env = g_environ_setenv(env, "NICE_REMOTE_HOSTNAME", remote_hostname, TRUE);
 
   gchar* cmd = g_getenv(envvar_name);
   g_debug("pipe_stdio_to_hook('%s')=%s\n", envvar_name, cmd);
@@ -371,7 +377,7 @@ pipe_stdio_to_hook(const gchar* envvar_name) {
   GError* error = NULL;
 
   g_debug("Executing '%s'\n", cmd);
-  spawned = g_spawn_async_with_pipes(".", argv, NULL, G_SPAWN_CHILD_INHERITS_STDIN, NULL, NULL,
+  spawned = g_spawn_async_with_pipes(".", argv, env, G_SPAWN_CHILD_INHERITS_STDIN, NULL, NULL,
     &pid, NULL, NULL, NULL, &error);
 
   if(error != NULL) {

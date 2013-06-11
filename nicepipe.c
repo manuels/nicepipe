@@ -17,6 +17,7 @@ guint stun_port = 3478;
 gchar* stun_host = NULL;
 gint* is_caller = NULL;
 gboolean not_reliable = FALSE;
+gchar* remote_hostname = NULL;
 
 gint max_size = 8;
 gboolean verbose = FALSE;
@@ -96,6 +97,11 @@ parse_argv(int argc, char *argv[]) {
   if (!g_option_context_parse(context, &argc, &argv, &error)) {
     g_print("option parsing failed: %s\n", error->message);
     g_error_free(error);
+    exit(1);
+  }
+
+  if(remote_hostname == NULL) {
+    g_critical("No remote hostname given! (Please use -h)");
     exit(1);
   }
 

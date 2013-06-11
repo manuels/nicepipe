@@ -16,6 +16,7 @@
 guint forward_port = 1500;
 guint stun_port = 3478;
 gchar* stun_host = NULL;
+gchar* remote_hostname = NULL;
 gint* is_caller = NULL;
 gboolean not_reliable = FALSE;
 gboolean verbose = TRUE;
@@ -24,8 +25,10 @@ gint max_size = 8;
 gboolean beep = FALSE;
 GOptionEntry all_options[] =
 {
-  { "forwarding port", 'P', 0, G_OPTION_ARG_INT, &forward_port,
-    "Port to listen at (for caller) or to forward to (for callee)", "P" },
+  { "forwarding_port", 'P', 0, G_OPTION_ARG_INT, &forward_port,
+    "Port to listen at (for caller) or to forward to (for callee)", NULL },
+  { "hostname", 'H', 0, G_OPTION_ARG_STRING, &remote_hostname,
+    "remote hostname (as mentioned in $HOME/.ssh/known_hosts", NULL },
   { "stun_port", 'p', 0, G_OPTION_ARG_INT, &stun_port,
     "STUN server port (default: 3478)", "p" },
   { "stun_host", 's', 0, G_OPTION_ARG_STRING, &stun_host,
@@ -122,6 +125,11 @@ parse_argv(int argc, char *argv[]) {
   if (!g_option_context_parse(context, &argc, &argv, &error)) {
     g_print("option parsing failed: %s\n", error->message);
     g_error_free(error);
+    exit(1);
+  }
+
+  if(remote_hostname == NULL) {
+    g_critical("No remote hostname given! (Please use -h)");
     exit(1);
   }
 

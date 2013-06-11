@@ -10,4 +10,5 @@ extern gchar* stun_host;
 extern gint* is_caller;
 extern guint output_fd;
 extern gboolean verbose;
+extern gchar* remote_hostname;
 #endif
