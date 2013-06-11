@@ -61,7 +61,8 @@ Troubleshooting
 Either the address is really still in use (look at `netstat -nl`) or your previous session did not end gracefully. In the latter case, wait some seconds and try again
 
 ### Connection is not established
-Remove `$HOME/Dropbox/.nice*` and try again
+Remove `$HOME/Dropbox/.nice*` and try again or add the argument `-s stunserver.org`.
+
 
 
 You have a better idea for exchanging IP addresses?
