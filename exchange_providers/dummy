@@ -6,7 +6,7 @@ shift
 MODE=$1
 shift
 
-FILENAME="$ISCALLER.cre"
+FILENAME=".nice$ISCALLER.cre"
 
 if [ "$MODE" = "publish" ]; then
   cat > $FILENAME
@@ -18,9 +18,9 @@ fi
 
 if [ "$MODE" = "lookup" ]; then
   if [ $ISCALLER = "1" ]; then 
-    FILENAME="0.cre"
+    FILENAME=".nice0.cre"
   else
-    FILENAME="1.cre"
+    FILENAME=".nice1.cre"
   fi
 
   while [ ! -f "$FILENAME" ]; do
@@ -29,4 +29,3 @@ if [ "$MODE" = "lookup" ]; then
   done
   cat $FILENAME
 fi
-
