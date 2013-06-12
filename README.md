@@ -3,7 +3,7 @@ nicepipe
 
 A nice, network-transparent socat extension.
 
-It allows you to setup a network connection between two peers even if they are behind a NAT and uses your SSH keypair to secure the connection.
+It allows you to setup a network connection between two peers even if they are behind a NAT and uses your SSH keypairs to secure the connection.
 
 `nicepipe` solves two problems two problems that usually occur when you want to connect two computers somewhere on the planet:
 
@@ -21,17 +21,17 @@ It allows you to setup a network connection between two peers even if they are b
 Installation
 ------------
 
-`nicepipe` requires `glib`, `libnice`, `socat` and your SSH RSA key pair (`$HOME/.ssh/id_rsa`).
+`nicepipe` requires `glib`, `libnice`, `socat` and your SSH RSA key pairs (`$HOME/.ssh/id_rsa`).
 To compile just run `make`.
 
 
 Usage
 -----
 
-`nicepipe` uses your SSH key pair (`$HOME/.ssh/id_rsa`) to setup a secure connection between the two peers.
+`nicepipe` uses your SSH key pairs (`$HOME/.ssh/id_rsa`) to setup a secure connection between the two peers.
 Currently a file hosting service like Dropbox or Ubuntu One setup (*MUST be the same account*) on each peers.
 
-1) Make sure you have generated an SSH key pair (otherwise use `ssh-keygen`).
+1) Make sure you have generated an SSH key pairs (otherwise use `ssh-keygen`).
 
 2) Change into your file hosting service's directory on both machines (called `alice` and `bob`), e.g.
 

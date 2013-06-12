@@ -60,7 +60,8 @@ while [ $# != 0 ]; do
 			cat $TMP_NEW_REMOTE_PUBLIC_KEY_FILE | cut -d' ' -f1-2 1>&2
 			ok=no
 		else
-			if [ "$NEW_FINGERPRINT" != "$OLD_FINGERPRINT" ]; then
+			LEN=`echo $NEW_FINGERPRINT | wc -c`
+			if [ "$NEW_FINGERPRINT" != "$OLD_FINGERPRINT" -a $LEN = "48" ]; then
 				echo "Incorrect fingerprint (was: '$NEW_FINGERPRINT', expected '$OLD_FINGERPRINT')!" 1>&2
 				ok=no
 			else
