@@ -2,6 +2,12 @@
 # upload data to some provider where somebody else can find it ;)
 PRIVATE_KEY_FILE=~/.ssh/id_rsa
 PUBLIC_KEY_FILE=~/.ssh/id_rsa.pub
+NICE_KNOWN_HOSTS=~/.nice_known_hosts
+
+if [ ! -e "$NICE_KNOWN_HOSTS" ]; then
+	echo "# This is nicepipe's known_hosts file" > $NICE_KNOWN_HOSTS
+	echo "# It has the same format as ssh's $HOME/.ssh/known_hosts (see sshd(8) manpage for details)" >> $NICE_KNOWN_HOSTS
+fi
 
 ISCALLER=$1
 shift
@@ -12,6 +18,7 @@ shift
 MODE=$1
 shift
 
+set +x
 
 while [ $# != 0 ]; do
 	ARG=$1
@@ -50,14 +57,18 @@ while [ $# != 0 ]; do
 	
 		# calculate fingerprints
 		NEW_FINGERPRINT=`ssh-keygen -f $TMP_NEW_REMOTE_PUBLIC_KEY_FILE -l | cut -d' ' -f2`
-		OLD_FINGERPRINT=`ssh-keygen -F $NICE_REMOTE_HOSTNAME  -l | grep -v '#' | grep -i rsa | head -n 1 | cut -d' ' -f2`
+		OLD_FINGERPRINT=`ssh-keygen -F $NICE_REMOTE_HOSTNAME -f $NICE_KNOWN_HOSTS -l | grep -v '#' | grep -i rsa | head -n 1 | cut -d' ' -f2`
 
 		ok=yes
 		# compare finger prints
 		if [ "$OLD_FINGERPRINT" = '' ]; then
-			echo "This seems to be a new public key! (fingerprint: '$NEW_FINGERPRINT')!" 1>&2
+			echo "This seems to be a new public key:" 1>&2
+			ssh-keygen -f $TMP_NEW_REMOTE_PUBLIC_KEY_FILE -lv 1>&2
 			echo "Maybe you want to add it to your ~/.ssh/known_hosts?" 1>&2
-			cat $TMP_NEW_REMOTE_PUBLIC_KEY_FILE | cut -d' ' -f1-2 1>&2
+			echo "" 1>&2
+			echo "If so, execute this command:" 1>&2
+			echo "  echo $NICE_REMOTE_HOSTNAME `cat $TMP_NEW_REMOTE_PUBLIC_KEY_FILE` >> $HOME/.nice_known_hosts" 1>&2
+			echo "and run nicepipe again." 1>&2
 			ok=no
 		else
 			LEN=`echo $NEW_FINGERPRINT | wc -c`
@@ -70,7 +81,7 @@ while [ $# != 0 ]; do
 				REMOTE_PUBKEY_SSH=$(tempfile -p.n)
 				REMOTE_PUBKEY=$(tempfile -p.n)
 
-				ssh-keygen -F $NICE_REMOTE_HOSTNAME | tail -n 1 | sed -e 's/.*ssh-rsa/ssh-rsa/' > $REMOTE_PUBKEY_SSH
+				ssh-keygen -F $NICE_REMOTE_HOSTNAME -f $NICE_KNOWN_HOSTS | tail -n 1 | sed -e 's/.*ssh-rsa/ssh-rsa/' > $REMOTE_PUBKEY_SSH
 				ssh-keygen -f $REMOTE_PUBKEY_SSH -e -m PKCS8 > $REMOTE_PUBKEY
 
 				openssl x509 -noout -pubkey -in $NICE_REMOTE_CRT > $REMOTE_CRT_PUBKEY

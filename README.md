@@ -1,7 +1,7 @@
 nicepipe
 ========
 
-A nice, network-transparent socat extension.
+Netcat's p2p buddy
 
 It allows you to setup a network connection between two peers even if they are behind a NAT and uses your SSH keypairs to secure the connection.
 
@@ -50,14 +50,14 @@ Currently a file hosting service like Dropbox or Ubuntu One setup (*MUST be the 
     bob ~/Dropbox$ echo Hello Alice! |  ./nicepipe stdio -c 0 -H <PEERNAME>
     Hello Bob!
 
-where `<PEERNAME>` corresponds to the hostname of bob's (alice's) public key on alice's (bob's) machine in `$HOME/.ssh/known_hosts` (`<PEERNAME>` MAY not be reachable (traditionally) by the local machine).
+where `<PEERNAME>` corresponds to the hostname of bob's (alice's) public key on alice's (bob's) machine in `$HOME/.nice_known_hosts` (`<PEERNAME>` MAY not be reachable (traditionally) by the local machine).
 
 3b) Run nicepipe in vpn-mode on both machines:
     
-    alice ~/Dropbox$ sudo ./nicepipe tun -c 1 -H <HOSTNAME>
+    alice ~/Dropbox$ sudo ./nicepipe tun -c 1 -H <PEERNAME>
     Creating new network interface with IP# 10.0.1.2/24
 
-    bob ~/Dropbox$ sudo ./nicepipe tun -c 0 -H <HOSTNAME>
+    bob ~/Dropbox$ sudo ./nicepipe tun -c 0 -H <PEERNAME>
     Creating new network interface with IP# 10.0.1.1/24
 
 Then you can connect between the two machines:
