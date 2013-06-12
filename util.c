@@ -239,7 +239,7 @@ parse_candidate(char *scand, guint stream_id) {
   gchar **tokens = NULL;
   guint i;
 
-  tokens = g_strsplit (scand, ",", 5);
+  tokens = g_strsplit(scand, ",", 5);
   for(i = 0; tokens && tokens[i]; i++);
   if (i != 5)
     goto end;

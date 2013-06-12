@@ -16,10 +16,10 @@ for i in `seq $#`; do
 	fi
 done
 
-# setup mode (stdio or tun)
-if [ "$MODE" = 'stdio' ]; then
+# setup mode (pipe or vpn)
+if [ "$MODE" = 'pipe' ]; then
 	MODE_ARG=stdio
-elif [ "$MODE" = 'tun' ]; then
+elif [ "$MODE" = 'vpn' ]; then
 	if [ "$IS_CALLER" = "1" ]; then
 		IP="10.0.1.2/24"
 	else
@@ -28,8 +28,8 @@ elif [ "$MODE" = 'tun' ]; then
 	MODE_ARG=tun:$IP,iff-up
 	echo "Creating new network interface with IP# ${IP}"
 else
-	echo 'First argument must be "stdio" (for pipe) or "tun" (for vpn)!'
-	echo "E.g. $0 stdio $1"
+	echo 'First argument must be "pipe" or "vpn"!'
+	echo "E.g. $0 pipe $1"
 	exit 1
 fi
 

@@ -37,6 +37,7 @@ start_server(NiceAgent *agent, guint stream_id, guint component_id, guint state,
     setup_client(agent);
 
   pipe_stdio_to_hook("NICE_PIPE_AFTER");
+  g_message("Connection to %s established.\n", remote_hostname);
 }
 
 void
@@ -50,6 +51,7 @@ start_server_reliable(NiceAgent *agent, guint stream_id, guint component_id, gpo
     setup_client(agent);
 
   pipe_stdio_to_hook("NICE_PIPE_AFTER");
+  g_message("Connection to %s established.\n", remote_hostname);
 }
 
 void
