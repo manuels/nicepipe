@@ -1,14 +1,15 @@
 nicepipe
 ========
 
-Netcat's p2p buddy
+Nicepipe is netcat for p2p connections.
+
 
 It allows you to setup a network connection between two peers even if they are behind a NAT and uses your SSH keypairs to secure the connection.
 
 `nicepipe` solves two problems two problems that usually occur when you want to connect two computers somewhere on the planet:
 
 
-1) No domain name required
+1) No DNS required
 
 `nicepipe` uses exchange_provider scripts to exchange IPs of the hosts
 
@@ -21,7 +22,7 @@ It allows you to setup a network connection between two peers even if they are b
 Installation
 ------------
 
-`nicepipe` requires `glib`, `libnice`, `socat` and your SSH RSA key pairs (`$HOME/.ssh/id_rsa`).
+nicepipe requires `glib`, `libnice`, `socat` and your SSH RSA key pairs (`$HOME/.ssh/id_rsa`).
 To compile just run `make`.
 
 
@@ -43,21 +44,20 @@ Currently a file hosting service like Dropbox or Ubuntu One setup (*MUST be the 
 
 3a) Run nicepipe in pipe-mode on both machines:
 
-    alice ~/Dropbox$ echo Hello Bob! | ./nicepipe stdio -c 1 -H <PEERNAME>
+    alice ~/Dropbox$ echo Hello Bob! | ./nicepipe stdio -c 1 -H bob
     Hello Alice!`
  
 
-    bob ~/Dropbox$ echo Hello Alice! |  ./nicepipe stdio -c 0 -H <PEERNAME>
+    bob ~/Dropbox$ echo Hello Alice! |  ./nicepipe stdio -c 0 -H alice
     Hello Bob!
 
-where `<PEERNAME>` corresponds to the hostname of bob's (alice's) public key on alice's (bob's) machine in `$HOME/.nice_known_hosts` (`<PEERNAME>` MAY not be reachable (traditionally) by the local machine).
 
 3b) Run nicepipe in vpn-mode on both machines:
     
-    alice ~/Dropbox$ sudo ./nicepipe tun -c 1 -H <PEERNAME>
+    alice ~/Dropbox$ sudo ./nicepipe tun -c 1 -H bob
     Creating new network interface with IP# 10.0.1.2/24
 
-    bob ~/Dropbox$ sudo ./nicepipe tun -c 0 -H <PEERNAME>
+    bob ~/Dropbox$ sudo ./nicepipe tun -c 0 -H alice
     Creating new network interface with IP# 10.0.1.1/24
 
 Then you can connect between the two machines:

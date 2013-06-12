@@ -34,7 +34,7 @@ while [ $# != 0 ]; do
 	fi
 
 	if [ "$MODE" = 'publish' ]; then
-		cat - $PUBLIC_KEY_FILE $NICE_LOCAL_CRT | ./exchange_providers/${PROVIDER} ${ISCALLER} ${MODE} ${OPTIONS}
+		cat - $NICE_LOCAL_CRT | ./exchange_providers/${PROVIDER} ${ISCALLER} ${MODE} ${OPTIONS}
 	fi
 
 	if [ "$MODE" = 'unpublish' ]; then
@@ -43,31 +43,35 @@ while [ $# != 0 ]; do
 
 	if [ "$MODE" = 'lookup' ]; then
 		TMP_CREDENTIALS_FILE=$(tempfile -s.cre -p.n)
-		TMP_REST=$(tempfile -s.r -p.n)
-		TMP_NEW_REMOTE_PUBLIC_KEY_FILE=$(tempfile -s.pub -p.n)
-		if [ -z "$NICE_REMOTE_CRT" ]; then
-			NICE_REMOTE_CRT=`tempfile -s.pub -p.nice`
-		fi
-		
-		# split information: (credentials, public key, certificate)
-		./exchange_providers/${PROVIDER} ${ISCALLER} ${MODE} ${OPTIONS} > $TMP_REST
-		head -n 1 $TMP_REST
-		tail -n+2 $TMP_REST | head -n 1 > $TMP_NEW_REMOTE_PUBLIC_KEY_FILE
-		tail -n+3 $TMP_REST > $NICE_REMOTE_CRT
+		TMP_NEW_REMOTE_CERTIFICATE=$(tempfile -s.r -p.n)
+		TMP_NEW_REMOTE_PUBLIC_KEY_SSL=$(tempfile -s.pub -p.n)
+		TMP_NEW_REMOTE_PUBLIC_KEY_SSH=$(tempfile -s.pub -p.n)
+
+		# split information: (credentials, certificate)
+		TMP_RECEIVED=$(tempfile -s.r -p.n)
+		./exchange_providers/${PROVIDER} ${ISCALLER} ${MODE} ${OPTIONS} > $TMP_RECEIVED
+		head -n 1 $TMP_RECEIVED > $TMP_CREDENTIALS_FILE
+		tail -n+2 $TMP_RECEIVED > $TMP_NEW_REMOTE_CERTIFICATE
+
+		cat $TMP_CREDENTIALS_FILE
+
+		# extract public key from certificate and convert to ssh public key
+		openssl x509 -noout -pubkey -in $TMP_NEW_REMOTE_CERTIFICATE > $TMP_NEW_REMOTE_PUBLIC_KEY_SSL
+		ssh-keygen -f $TMP_NEW_REMOTE_PUBLIC_KEY_SSL -i -m PKCS8 > $TMP_NEW_REMOTE_PUBLIC_KEY_SSH
 	
 		# calculate fingerprints
-		NEW_FINGERPRINT=`ssh-keygen -f $TMP_NEW_REMOTE_PUBLIC_KEY_FILE -l | cut -d' ' -f2`
+		NEW_FINGERPRINT=`ssh-keygen -f $TMP_NEW_REMOTE_PUBLIC_KEY_SSH -l | cut -d' ' -f2`
 		OLD_FINGERPRINT=`ssh-keygen -F $NICE_REMOTE_HOSTNAME -f $NICE_KNOWN_HOSTS -l | grep -v '#' | grep -i rsa | head -n 1 | cut -d' ' -f2`
 
 		ok=yes
 		# compare finger prints
 		if [ "$OLD_FINGERPRINT" = '' ]; then
 			echo "This seems to be a new public key:" 1>&2
-			ssh-keygen -f $TMP_NEW_REMOTE_PUBLIC_KEY_FILE -lv 1>&2
+			ssh-keygen -f $TMP_NEW_REMOTE_PUBLIC_KEY_SSH -lv 1>&2
 			echo "Maybe you want to add it to your ~/.ssh/known_hosts?" 1>&2
 			echo "" 1>&2
 			echo "If so, execute this command:" 1>&2
-			echo "  echo $NICE_REMOTE_HOSTNAME `cat $TMP_NEW_REMOTE_PUBLIC_KEY_FILE` >> $HOME/.nice_known_hosts" 1>&2
+			echo "  echo $NICE_REMOTE_HOSTNAME `cat $TMP_NEW_REMOTE_PUBLIC_KEY_SSH` >> $HOME/.nice_known_hosts" 1>&2
 			echo "and run nicepipe again." 1>&2
 			ok=no
 		else
@@ -77,28 +81,31 @@ while [ $# != 0 ]; do
 				ok=no
 			else
 				# check if cert was signed with this public key
-				REMOTE_CRT_PUBKEY=$(tempfile -p.n)
-				REMOTE_PUBKEY_SSH=$(tempfile -p.n)
-				REMOTE_PUBKEY=$(tempfile -p.n)
+				OLD_REMOTE_PUBKEY_SSH=$(tempfile -p.n)
 
-				ssh-keygen -F $NICE_REMOTE_HOSTNAME -f $NICE_KNOWN_HOSTS | tail -n 1 | sed -e 's/.*ssh-rsa/ssh-rsa/' > $REMOTE_PUBKEY_SSH
-				ssh-keygen -f $REMOTE_PUBKEY_SSH -e -m PKCS8 > $REMOTE_PUBKEY
+				ssh-keygen -F $NICE_REMOTE_HOSTNAME -f $NICE_KNOWN_HOSTS | tail -n 1 | sed -e 's/.*ssh-rsa/ssh-rsa/' > $OLD_REMOTE_PUBKEY_SSH
 
-				openssl x509 -noout -pubkey -in $NICE_REMOTE_CRT > $REMOTE_CRT_PUBKEY
-
-				diff $REMOTE_CRT_PUBKEY $REMOTE_PUBKEY
+				diff $TMP_NEW_REMOTE_PUBLIC_KEY_SSH $OLD_REMOTE_PUBKEY_SSH
 				if [ $? -ne 0 ]; then
 					echo "Received certificate was not signed by the correct public key!"
 					ok=no
 				fi
 			fi
 		fi
-		rm -f $TMP_NEW_REMOTE_PUBLIC_KEY_FILE
-		rm -f $TMP_CREDENTIALS_FILE
+		rm -f $TMP_CREDENTIALS_FILE \
+			$TMP_NEW_REMOTE_PUBLIC_KEY_SSL \
+			$TMP_NEW_REMOTE_PUBLIC_KEY_SSH \
+			$TMP_RECEIVED
 
 		if [ $ok = "no" ]; then
 			exit 1
 		fi
+
+
+		if [ -z "$NICE_REMOTE_CRT" ]; then
+			NICE_REMOTE_CRT=`tempfile -s.pub -p.nice`
+		fi
+		cat $TMP_NEW_REMOTE_CERTIFICATE > $NICE_REMOTE_CRT
 	fi
 
 	if [ $? -ne 0 ]; then
