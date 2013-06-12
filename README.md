@@ -36,27 +36,26 @@ Currently a file hosting service like Dropbox or Ubuntu One setup (**MUST be the
 
 ### 2. Change into your file hosting service's directory on both machines (called `alice` and `bob`), e.g.
 
-    # This is Alice's machine                                                # This is Bob's machine
-    alice$ cd ~/Dropbox                                                      bob$ cd ~/Dropbox
+    # This is Alice's machine                                        |  # This is Bob's machine
+    alice$ cd ~/Dropbox                                              |  bob$ cd ~/Dropbox
 
 
 ### 3a. Run nicepipe in pipe-mode on both machines:
 
-    alice ~/Dropbox$ echo Hello Bob! | ./nicepipe pipe -c 1 -H bob          bob ~/Dropbox$ echo Hello Alice! |  ./nicepipe pipe -c 0 -H alice
-
-    Hello Alice!                                                             Hello Bob!
+    alice ~/Dropbox$ echo Hello Bob! | ./nicepipe pipe -c 1 -H bob   |  bob ~/Dropbox$ echo Hello Alice! |  ./nicepipe pipe -c 0 -H alice
+    Hello Alice!                                                     |  Hello Bob!
 
 
 ### 3b. Run nicepipe in vpn-mode on both machines:
     
-    alice ~/Dropbox$ sudo ./nicepipe vpn -c 1 -H bob                         bob ~/Dropbox$ sudo ./nicepipe vpn -c 0 -H alice
-    Creating new network interface with IP# 10.0.1.2/24                      Creating new network interface with IP# 10.0.1.1/24
+    alice ~/Dropbox$ sudo ./nicepipe vpn -c 1 -H bob                 |  bob ~/Dropbox$ sudo ./nicepipe vpn -c 0 -H alice
+    Creating new network interface with IP# 10.0.1.2/24              |  Creating new network interface with IP# 10.0.1.1/24
 
 
 Then you can connect between the two machines:
 
-    alice $ echo Hello Bob! | nc -l 10.0.1.2 10000                           bob $ echo Hello Alice! | nc 10.0.1.2 10000
-    Hello Alice!                                                             Hello Bob!
+    alice $ echo Hello Bob! | nc -l 10.0.1.2 10000                   |  bob $ echo Hello Alice! | nc 10.0.1.2 10000
+    Hello Alice!                                                     |  Hello Bob!
 
 
 Troubleshooting
