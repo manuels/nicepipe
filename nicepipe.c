@@ -38,6 +38,7 @@ GOptionEntry all_options[] =
 #define G_LOG_DOMAIN    ((gchar*) 0)
 
 GMainLoop *gloop;
+GTimer* keepalive_timer = NULL;
 
 guint output_fd;
 guint nice_stream_id;
@@ -55,17 +56,19 @@ main(int argc, char *argv[]) {
   
   NiceAgent *agent;
   agent = setup_libnice();
+  keepalive_timer = g_timer_new();
+  g_timer_stop(keepalive_timer);
 
   // Connect to signals
   g_signal_connect(G_OBJECT(agent), "candidate-gathering-done", G_CALLBACK(exchange_credentials), NULL);
 
   if(not_reliable)
-    g_signal_connect(G_OBJECT(agent), "component-state-changed",  G_CALLBACK(attach_stdin2send_callback), NULL);
+    g_signal_connect(G_OBJECT(agent), "component-state-changed",  G_CALLBACK(attach_stdin2send_callback), keepalive_timer);
   else
-    g_signal_connect(G_OBJECT(agent), "reliable-transport-writable",  G_CALLBACK(attach_stdin2send_callback_reliable), NULL);
+    g_signal_connect(G_OBJECT(agent), "reliable-transport-writable",  G_CALLBACK(attach_stdin2send_callback_reliable), keepalive_timer);
 
   output_fd = 1;
-  nice_agent_attach_recv(agent, nice_stream_id, 1, g_main_loop_get_context(gloop), recv_data2fd, NULL);
+  nice_agent_attach_recv(agent, nice_stream_id, 1, g_main_loop_get_context(gloop), recv_data2fd, keepalive_timer);
 
   g_debug("Starting to gather candidates...\n");
   if (!nice_agent_gather_candidates(agent, nice_stream_id)) {
@@ -113,3 +116,4 @@ void
 setup_glib() {
   gloop = g_main_loop_new(NULL, FALSE);
 }
+

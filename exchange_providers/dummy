@@ -6,7 +6,8 @@ shift
 MODE=$1
 shift
 
-FILENAME=".nice$ISCALLER.cre"
+DIRNAME="$HOME/Dropbox/"
+FILENAME="$DIRNAME/.nice$ISCALLER.cre"
 
 if [ "$MODE" = "publish" ]; then
   cat > $FILENAME
@@ -18,9 +19,9 @@ fi
 
 if [ "$MODE" = "lookup" ]; then
   if [ $ISCALLER = "1" ]; then 
-    FILENAME=".nice0.cre"
+    FILENAME="$DIRNAME/.nice0.cre"
   else
-    FILENAME=".nice1.cre"
+    FILENAME="$DIRNAME/.nice1.cre"
   fi
 
   while [ ! -f "$FILENAME" ]; do

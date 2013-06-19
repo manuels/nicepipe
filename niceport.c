@@ -79,14 +79,6 @@ main(int argc, char *argv[]) {
       g_signal_connect(G_OBJECT(agent), "reliable-transport-writable",  G_CALLBACK(start_server_reliable), server);
   }
   else {
-    //GSocketClient* client;
-    //client = setup_client(agent);
-
-    /*if(not_reliable)
-      g_signal_connect(G_OBJECT(agent), "component-state-changed",  G_CALLBACK(connect_client), client);
-    else
-      g_signal_connect(G_OBJECT(agent), "reliable-transport-writable",  G_CALLBACK(connect_client_reliable), client);
-      */
     if(not_reliable)
       g_signal_connect(G_OBJECT(agent), "component-state-changed",  G_CALLBACK(start_server), NULL);
     else

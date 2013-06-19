@@ -22,4 +22,6 @@ void log_stderr(const gchar *log_domain,
 gboolean
 parse_packet(gchar* buffer, gsize *buf_len, gchar* packet, gsize* packet_len);
 
+gboolean exit_if_child_exited(gpointer data);
+
 #endif

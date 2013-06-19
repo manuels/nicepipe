@@ -188,12 +188,7 @@ parse_remote_data(NiceAgent *agent, guint stream_id, guint component_id, char *l
 
       if (c == NULL) {
         g_critical("failed to parse candidate: %s", line_argv[i]);
-
-        if (line_argv != NULL)
-          g_strfreev(line_argv);
-        if (remote_candidates != NULL)
-          g_slist_free_full(remote_candidates, (GDestroyNotify)&nice_candidate_free);
-        exit(1);
+        continue;
       }
       remote_candidates = g_slist_prepend(remote_candidates, c);
     }
@@ -352,8 +347,8 @@ lookup_remote_credentials(NiceAgent* agent, guint stream_id) {
   g_free(stderr);
 }
 
-void
-pipe_stdio_to_hook(const gchar* envvar_name) {
+GPid
+pipe_stdio_to_hook(const gchar* envvar_name, GSourceFunc callback) {
   gchar** argv;
   gint argc;
   gchar **env = g_get_environ();
@@ -362,7 +357,7 @@ pipe_stdio_to_hook(const gchar* envvar_name) {
   gchar* cmd = g_getenv(envvar_name);
   g_debug("pipe_stdio_to_hook('%s')=%s\n", envvar_name, cmd);
   if(cmd == NULL || strlen(cmd) == 0)
-    return;
+    return -1;
 
   // parse command line to argv array
   if(!g_shell_parse_argv(cmd, &argc, &argv, NULL)) {
@@ -382,8 +377,20 @@ pipe_stdio_to_hook(const gchar* envvar_name) {
 
   if(error != NULL) {
     g_critical("Error executing '%s': %s", cmd, error->message);
+    return pid;
   }
+
+  if(callback != NULL) {
+    // no SIGCHLD, so we cannot
+    // g_child_watch_add(pid, callback, NULL);
+
+    gint interval_ms = 500;
+    g_timeout_add(interval_ms, callback, (gpointer) pid);
+  }
+
   g_assert(spawned);
+
+  return pid;
 }
 
 gboolean
@@ -405,4 +412,18 @@ parse_packet(gchar* buffer, gsize *buf_len, gchar* packet, gsize* packet_len) {
     return TRUE;
   }
   return FALSE;
+}
+
+gboolean
+exit_if_child_exited(gpointer data) {
+  GPid pid = (GPid) data;
+  
+  gint exit_status;
+  if(waitpid(pid, &exit_status, WNOHANG) != -1) {
+    printf("child has exited!\n");
+    g_main_loop_quit(gloop);
+    return FALSE;
+  }
+
+  return TRUE;
 }

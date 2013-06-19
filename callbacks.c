@@ -21,7 +21,7 @@ exchange_credentials(NiceAgent *agent, guint stream_id, gpointer data) {
   publish_local_credentials(agent, stream_id);
   lookup_remote_credentials(agent, stream_id);
 
-  pipe_stdio_to_hook("NICE_PIPE_BEFORE");
+  pipe_stdio_to_hook("NICE_PIPE_BEFORE", exit_if_child_exited);
 
   g_debug("candidate gathering done\n");
 }
@@ -36,7 +36,8 @@ start_server(NiceAgent *agent, guint stream_id, guint component_id, guint state,
   else
     setup_client(agent);
 
-  pipe_stdio_to_hook("NICE_PIPE_AFTER");
+  pipe_stdio_to_hook("NICE_PIPE_AFTER", exit_if_child_exited);
+
   g_message("Connection to %s established.\n", remote_hostname);
 }
 
@@ -50,7 +51,8 @@ start_server_reliable(NiceAgent *agent, guint stream_id, guint component_id, gpo
   else
     setup_client(agent);
 
-  pipe_stdio_to_hook("NICE_PIPE_AFTER");
+  pipe_stdio_to_hook("NICE_PIPE_AFTER", exit_if_child_exited);
+
   g_message("Connection to %s established.\n", remote_hostname);
 }
 
@@ -105,6 +107,12 @@ send_data(GIOChannel *source, GIOCondition cond, gpointer agent_ptr) {
     
     res = recvmsg(sock, &msgh, MSG_DONTWAIT);
     if(res > -1) {
+      if(res == 0) {
+        // probably FLUSHED
+        g_main_loop_quit(gloop);
+        return FALSE;
+      }
+
       g_debug("recvmsg: %i\n", res);
       res = nice_agent_send(agent, nice_stream_id, 1, res, buffer);
       g_debug("nice_agent_send: %i\n", res);
