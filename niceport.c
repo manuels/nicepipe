@@ -131,6 +131,8 @@ parse_argv(int argc, char *argv[]) {
 
 void
 setup_glib() {
+  g_type_init();
+
   gloop = g_main_loop_new(NULL, FALSE);
 }
 

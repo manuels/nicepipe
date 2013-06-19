@@ -1,5 +1,6 @@
 #!/bin/sh
 
+set -x
 MODE=$1
 shift
 
@@ -43,7 +44,7 @@ openssl req -new -key ~/.ssh/id_rsa -x509 -days 365 -out $NICE_LOCAL_CRT -subj '
 
 if [ "$IS_CALLER" = "1" ]; then
 	PORT=1500
-	NICE_PIPE_AFTER="$SOCAT $MODE_ARG openssl-connect:localhost:$PORT,key=$HOME/.ssh/id_rsa,cert=$NICE_LOCAL_CRT,cafile=$NICE_REMOTE_CRT"
+	NICE_PIPE_AFTER="$SOCAT $MODE_ARG openssl-connect:localhost:$PORT,key=$HOME/.ssh/id_rsa,cert=$NICE_LOCAL_CRT,cafile=$NICE_REMOTE_CRT,connect-timeout=30"
 	#NICE_PIPE_AFTER="$SOCAT -x -v stdio tcp-connect:localhost:$PORT"
 else
 	PORT=1501

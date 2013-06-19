@@ -13,7 +13,7 @@ log_stderr(const gchar *log_domain,
             GLogLevelFlags log_level,
             const gchar *message,
             gpointer user_data) {
-  if(log_level < G_LOG_LEVEL_DEBUG)
+  //if(log_level < G_LOG_LEVEL_DEBUG)
     fprintf(stderr, "%i: %s", is_caller, message);
 }
 
@@ -388,6 +388,9 @@ pipe_stdio_to_hook(const gchar* envvar_name, GSourceFunc callback) {
     g_timeout_add(interval_ms, callback, (gpointer) pid);
   }
 
+  g_unix_signal_add(SIGTERM, terminate_child_and_exit, (gpointer) pid);
+  g_unix_signal_add(SIGINT, terminate_child_and_exit, (gpointer) pid);
+
   g_assert(spawned);
 
   return pid;
@@ -420,10 +423,19 @@ exit_if_child_exited(gpointer data) {
   
   gint exit_status;
   if(waitpid(pid, &exit_status, WNOHANG) != -1) {
-    printf("child has exited!\n");
     g_main_loop_quit(gloop);
     return FALSE;
   }
+
+  return TRUE;
+}
+
+
+gboolean
+terminate_child_and_exit(gpointer data) {
+  GPid pid = (GPid) data;
+  kill(pid, SIGTERM);
+  wait(pid);
 
   return TRUE;
 }

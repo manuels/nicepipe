@@ -23,5 +23,6 @@ gboolean
 parse_packet(gchar* buffer, gsize *buf_len, gchar* packet, gsize* packet_len);
 
 gboolean exit_if_child_exited(gpointer data);
+gboolean terminate_child_and_exit(gpointer data);
 
 #endif
